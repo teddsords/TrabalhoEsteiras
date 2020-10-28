@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define QTDPRODUTOS 5000
+#define QTDPRODUTOS 1500
 int simulandoSensor();
 int main()
 {
@@ -48,7 +48,7 @@ int main()
     // }
     //
   }while(opcaoContinuar == 1);
-  
+
   finish = clock();
   time = ((double) (finish - start))/CLOCKS_PER_SEC;
   printf("Demorou isto: %f\n",time );

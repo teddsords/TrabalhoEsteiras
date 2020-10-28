@@ -4,154 +4,151 @@
 #include <unistd.h>
 #include <time.h>
 
-#define QTDPRODUTOS 1500
-pthread_mutex_t lock;
+#define QTDPRODUTOS 1500                                          // Quantidade de produtos que irao passar pelas esteiras
+pthread_mutex_t lock;                                             // Variavel para poder realizar o lock nas threads
+pthread_cond_t contagemAtingida;                                  // Variavel condicional para saber quando a contagem foi atingida
 
 
-int i = 0, quantidadeDeProdutosPassados = 0, pesosDosProdutos[QTDPRODUTOS], numeroRandomico;
+int quantidadeDeProdutosPassados = 0,                             // Variavel para a contagem de produtos passados
+pesosDosProdutos[QTDPRODUTOS],                                    // Vetor para armazenar o peso sos produtos passados
+numeroRandomico;                                                  // Variavel para armazenar o numero randomico criado pelo "sensor"
 
-int simulandoSensor ()
-{
-  numeroRandomico = rand() + 1;
-  if(numeroRandomico%2 == 0)
-  {
-    return 1;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-void* somandoProdutos(void * arg)
-{
-  long id = (long) arg;
-  while(quantidadeDeProdutosPassados < QTDPRODUTOS)
-  {
-    // timer
-    if (simulandoSensor() == 1)
-    {
-      //timer finaliza
-      pthread_mutex_lock(&lock);
-      if(quantidadeDeProdutosPassados < QTDPRODUTOS)
-      {
-        pesosDosProdutos[quantidadeDeProdutosPassados] = rand()%20 + 1;
-        quantidadeDeProdutosPassados++;
-        //printf("Thread Number: %ld\n",id);
-      }
-      pthread_mutex_unlock(&lock);
-    }
-  }
-  return NULL;
-}
+int simulandoSensor ();                                           // Funcao para simular a passagem de um objeto pelos sensores das esteiras
+void *countProdutos (void *arg);                                  // Funcao que a thread de contagem ira executar para saber se a contagem ja finalizou, usando conditional variable
+void* somandoProdutos(void * arg);                                // Funcao que as threads das esteiras irao executar para somar um produto ao total de produtos passados
 
 int main()
 {
-  srand(time(NULL));
-  int a, somaDosPesosDosProdutos = 0, opcaoContinuar = 0, c;
-  long id1 = 1, id2 = 2, id3 = 3;
-  pthread_t pthEsteira1, pthEsteira2, pthEsteira3;
-  pthread_mutexattr_t mutexAttrPrioInherit;
-  int mutexProtocol;
+  srand(time(NULL));                                              // Para que sempre que se rode o codigo seja um novo numero sorteado
+  int indice,                                                     // Variavel usada para indexar nos vetores onde for necessario
+  somaDosPesosDosProdutos = 0,                                    // Variavel para armazenar o resultado da soma dos pesos de todos os produtos passados pelas esteiras
+  opcaoContinuar = 0,                                             // Variavel para saber se o programa executara novamente
+  caracterLixo;                                                   // Variavel para pegar o lixo e nao ler lixo no seguinte scanf
+  long id1 = 1, id2 = 2, id3 = 3, id4 = 4;                        // Variaveis para ids das threads
+  clock_t start, finish;                                          // Variaveis para obter os clocks passados
+  double time;                                                    // Variavel para mostrar o tempo passado
+  pthread_mutexattr_t mutexAttrPrioInherit;                       // Variavel para atributo do mutex
+  int mutexProtocol;                                              // Variavel para receber o protocolo utilizado pelo mutex
 
-  pthread_mutexattr_init(&mutexAttrPrioInherit);
-  pthread_mutexattr_getprotocol(&mutexAttrPrioInherit, &mutexProtocol);
-  if (mutexProtocol != PTHREAD_PRIO_INHERIT)
+  pthread_mutexattr_init(&mutexAttrPrioInherit);                  // inicializando a variavel de atributo do mutex
+  pthread_mutexattr_getprotocol(&mutexAttrPrioInherit, &mutexProtocol);         // Obtendo que protocolo o mutex estava utilizando inicialmente
+  if (mutexProtocol != PTHREAD_PRIO_INHERIT)                      // Caso o protocolo nao seja heranca de prioridade
   {
-    pthread_mutexattr_setprotocol(&mutexAttrPrioInherit, PTHREAD_PRIO_INHERIT);
-    printf("Nao estava com heranca de prioridade.\n"); // apaga depois
+    pthread_mutexattr_setprotocol(&mutexAttrPrioInherit, PTHREAD_PRIO_INHERIT); // iremos definir que o protocolo a ser utilizado sera esse
   }
-
-  clock_t start, finish;
-  double time;
-
 
   start = clock();
 
   do
   {
-    if(pthread_mutex_init(&lock, NULL))
+    if(pthread_mutex_init(&lock, NULL))                           // Inicializando o mutex, mas nao fazendo lock
     {
-      printf("Deu SERIAMENTE MERDA");
+      printf("Nao foi possivel inicializar o mutex\n");
       return 6;
     }
-//timer
-    if(pthread_create(&pthEsteira1, NULL, somandoProdutos, (void*) id1))
+
+    pthread_t threadEsteira[3], threadContadora;                  // Criando as variaveis que estarao anexadas as threads
+    pthread_create(&threadEsteira[0], NULL, somandoProdutos, (void *) id1);     // Criando a thread 1, ira executar a funcao somandoProdutos
+    pthread_create(&threadEsteira[1], NULL, somandoProdutos, (void *) id2);     // Criando a thread 2, ira executar a funcao somandoProdutos
+    pthread_create(&threadEsteira[2], NULL, somandoProdutos, (void *) id3);     // Criando a thread 3, ira executar a funcao somandoProdutos
+    pthread_create(&threadContadora, NULL, countProdutos, (void *) id4);        // Criando a thread encarregada de observar se ja chegamos ao objetivo, ira executar a funcao countProdutos
+    //timer
+
+    while(quantidadeDeProdutosPassados < QTDPRODUTOS)            // Atualizando o display enquanto nao tenhamos atingido o objetivo
     {
-      fprintf(stderr, "Error creating thread 2\n");
-      return 1;
-    }
-    if(pthread_create(&pthEsteira2, NULL, somandoProdutos, (void*) id2))
-    {
-      fprintf(stderr, "Error creating thread 2\n");
-      return 2;
+      printf("Valor de quantidadeDeProdutosPassados: %d\n",quantidadeDeProdutosPassados);    // Printando o valor dos produtos ja passados
     }
 
-    if(pthread_create(&pthEsteira3, NULL, somandoProdutos, (void*) id3))
+    for(indice = 0; indice < 3; indice++)
     {
-      fprintf(stderr, "Error creating thread 3\n");
-      return 3;
+      pthread_join(threadEsteira[indice], NULL);                  // Esperando para que todas as threads das esteiras voltem
     }
-
-    while(quantidadeDeProdutosPassados < QTDPRODUTOS)
-    {
-      printf("Valor de quantidadeDeProdutosPassados: %d\n",quantidadeDeProdutosPassados);
-    }
-
-
-    if(pthread_join(pthEsteira1,NULL))
-    {
-      fprintf(stderr, "Error joining thread 2\n");
-      return 4;
-    }
-
-    if(pthread_join(pthEsteira2,NULL))
-    {
-      fprintf(stderr, "Error joining thread 2\n");
-      return 5;
-    }
-
-    if(pthread_join(pthEsteira3, NULL))
-    {
-      fprintf(stderr, "Error joining thread 3\n");
-      return 6;
-    }
+    pthread_join(threadContadora, NULL);                          // Esperando para que a thread contadora volte
     //final timer
 
-    //printf("Valor de quantidadeDeProdutosPassados: %d\n",quantidadeDeProdutosPassados);
-
-    //printf("Valor de quantidade de produtos passados: %d\n", quantidadeDeProdutosPassados);
-
     //iniciar o timer
-    for(a = 0; a < QTDPRODUTOS; a++)
+    for(indice = 0; indice < QTDPRODUTOS; indice++)
     {
-      somaDosPesosDosProdutos += pesosDosProdutos[a];
+      somaDosPesosDosProdutos += pesosDosProdutos[indice];        // Somando os pesos dos  produtos que passaram pelas 3 esteiras
     }
     // finalizar o timer
-    printf("Valor total do peso dos produtos: %d\n", somaDosPesosDosProdutos);
+    printf("Valor total do peso dos produtos: %d\n", somaDosPesosDosProdutos);  // Pritando o peso total
+    printf("Quantidade de produtos: %d\n", quantidadeDeProdutosPassados);       // Mostrando a quantidade de produtos contados
 
-    // printf("Deseja executar novamente? (0 para parar e 1 para continuar).\n");
-    // scanf("%d", &opcaoContinuar);
-    // while((c = getchar()) != '\n' && c != EOF){}
-    //
-    // if(opcaoContinuar == 1)
+    //printf("Deseja executar novamente? (0 para parar e 1 para continuar).\n");//Perguntando se o programa ira executar novamente
+    //scanf("%d", &opcaoContinuar);                               // Lendo input do teclado
+    //while((c = getchar()) != '\n' && c != EOF){}                // Limpando buffer
+    //if(opcaoContinuar == 1)                                     // Caso a condicao seja verdadeira,
+    //{
+    // quantidadeDeProdutosPassados = 0;                          // Iremos reiniciar a contagem
+    // for(indice = 0; indice < QTDPRODUTOS; indice++)
     // {
-    //   printf("Zerando as paradas\n");
-    //   quantidadeDeProdutosPassados = 0;
-    //   i = 0;
-    //   pthread_mutex_destroy(&lock);
-    //   for(a = 0; a < QTDPRODUTOS; a++)
-    //   {
-    //     pesosDosProdutos[a] = 0;
-    //   }
+    //   pesosDosProdutos[indice] = 0;                            // Reiniciar os pesos para evitar lixo de memoria
     // }
+    //}
   }while(opcaoContinuar == 1);
 
   finish = clock();
-  time = ((double) (finish - start))/CLOCKS_PER_SEC;
-  printf("Demorou isto: %f\n",time );
-
-  pthread_exit(NULL);
+  time = ((double) (finish - start))/CLOCKS_PER_SEC;              // Pegando o tempo total da aplicacao
+  printf("Demorou isto: %f\n",time );                             // Printando quanto tempo demorou
+  pthread_mutex_destroy(&lock);                                   // Destruindo o Mutex
+  pthread_cond_destroy(&contagemAtingida);                        // Destruindo a variavel condicional
+  pthread_exit(NULL);                                             // Invocando o metodo de exit para todas as threads
 
   return 0;
+}
+
+int simulandoSensor ()                                            // Funcao para simular o sensor na esteira
+{
+  numeroRandomico = rand() + 1;                                   // Gerando um numero randomico qualquer
+  if(numeroRandomico%2 == 0)                                      // Caso o numero seja par, significa que passou um objeto pelo sensor
+  {
+    return 1;
+  }
+  else                                                            // Caso contrario o objeto esta "errado"
+  {
+    return 0;
+  }
+}
+
+void *countProdutos (void *arg)                                   // Trecho de codigo que a threadContadora ira executar
+{
+  long id = (long) arg;                                           // Variavel para armazenar o parametro
+
+  printf("Starting countProduts(): thread %ld\n", id);            // Pritando para saber que estamos por aqui
+
+  pthread_mutex_lock(&lock);                                      // Bloquendo a seguinte secao
+  while(quantidadeDeProdutosPassados < QTDPRODUTOS)
+  {
+    pthread_cond_wait(&contagemAtingida, &lock);                  // Esperar pelo sinal que a contagem foi atingida
+    printf("countProdutos(): thread %ld Condition signal received.\n", id);     // Informando sobre o recebimento do sinal
+  }
+  pthread_mutex_unlock(&lock);                                    // Desbloqueando secao critica
+  pthread_exit(NULL);                                             // saindo da thread
+}
+
+void* somandoProdutos(void * arg)                                 // Trecho de codigo que as threadEsteira irao executar
+{
+  long id = (long) arg;                                           // Variavel para salvar o valor do argumento
+  while(quantidadeDeProdutosPassados < QTDPRODUTOS)               // Executando enquanto nao tenhamos atingido o valor predeterminado
+  {
+    // timer
+    if (simulandoSensor() == 1)                                   // Caso tenha retornado valor 1, ou seja, passou produto pelo sensor
+    {
+      pthread_mutex_lock(&lock);                                  // Bloquearemos a seguinte parte do codigo pois e a secao critica
+      pesosDosProdutos[quantidadeDeProdutosPassados] = rand()%20 + 1;           // Peso aleatorio
+      quantidadeDeProdutosPassados++;                             // Passou um produto, soma um na quantidade
+
+      if(quantidadeDeProdutosPassados == QTDPRODUTOS)             // Caso tenhamos atingido o objetivo
+      {
+        pthread_cond_signal(&contagemAtingida);                   // Temos que avisar a threadContadora para finalizar o processo de contagem
+        printf("somandoProdutos(): thread: %ld, QTD: %d    Atingimos marca\n", id, quantidadeDeProdutosPassados);
+      }
+      //printf("somandoProdutos(): thread: %ld, QTD: %d       Desbloqueando mutex\n", id, quantidadeDeProdutosPassados); // So para ilustrar quem esta contando no momento
+      pthread_mutex_unlock(&lock);                                // Desbloqueando a secao critica
+      // Mandando fazer algum trabalho para alternar no mutex
+      //usleep(1);
+    }
+  }
+  pthread_exit(NULL);
 }
