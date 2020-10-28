@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <omp.h>
+#include <time.h>
 
 #define QTDPRODUTOS 300
 
@@ -27,14 +28,14 @@ void somandoProdutos()
       if(quantidadeDeProdutosPassados < QTDPRODUTOS)
       {
         
-        #pragma omp parallel reduction(+:quantidadeDeProdutosPassados,i)
+        #pragma omp parallel reduction(+:quantidadeDeProdutosPassados)
         {
         	quantidadeDeProdutosPassados++;
         	pesosDosProdutos[i] = 1;
         	i++;
             
-        	printf("I am locked with: %d.\n", omp_get_thread_num()); // tirar quando for tirar o tempo os 2
-        	printf("Valor de I: %d\n",i);
+        //	printf("I am locked with: %d.\n", omp_get_thread_num()); // tirar quando for tirar o tempo os 2
+        	//printf("Valor de I: %d\n",i);
         }
       }
     }
@@ -44,8 +45,10 @@ void somandoProdutos()
 
 int main(int argc, char **argv)
 {
-
-	omp_set_num_threads(3);			// usando 3 threads
+	clock_t antes, depois;
+	omp_set_num_threads(3);			// usando 3 threads, falta a do display
+	double tempo=0;
+	
 	srand(time(NULL));
 
 	somandoProdutos();
@@ -56,12 +59,16 @@ int main(int argc, char **argv)
 	
 	  printf("Valor de quantidade de produtos passados: %d\n", quantidadeDeProdutosPassados);
 
-    //iniciar o timer
+    antes = clock();
     for(a = 0; a < QTDPRODUTOS; a++)
     {
       somaDosPesosDosProdutos = somaDosPesosDosProdutos + pesosDosProdutos[a];
     }
-    // finalizar o timer
+    depois = clock();
+    
+    
+    
+    printf("Tempo: %f \n", ((double)  (depois-antes))/ CLOCKS_PER_SEC);
     printf("Valor total do peso dos produtos: %d\n", somaDosPesosDosProdutos);
 
     printf("Deseja executar novamente? (0 para parar e 1 para continuar).\n");
