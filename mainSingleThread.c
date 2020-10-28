@@ -9,14 +9,16 @@ int main()
   srand(time(NULL));
   int i = 0, somaDosPesosDosProdutos = 0, opcaoContinuar = 0, quantidadeDeProdutosPassados = 0,
        pesosDosProdutos[QTDPRODUTOS], numeroRandomico, c;
+  clock_t startSoma, finishSoma,
+       startEsteiras, finishEsteiras,
+       startGeral, finishGeral;                                // Variaveis para obter os clocks passados
+  double timeSoma, timeEsteiras, timeGeral;                       // Variavel para mostrar o tempo passado
 
-  clock_t start, finish;
-  double time;
-
-  start = clock();
+  startGeral = clock();
 
   do
   {
+    startEsteiras = clock();
     while(quantidadeDeProdutosPassados < QTDPRODUTOS)
     {
       if(simulandoSensor() == 1)
@@ -27,11 +29,16 @@ int main()
         printf("Quantidade de Produtos ja passados pelas esteiras: %d\n",quantidadeDeProdutosPassados);
       }
     }
+    finishEsteiras = clock();
+    timeEsteiras = ((double) (finishEsteiras - startEsteiras)) / CLOCKS_PER_SEC;
 
+    startSoma = clock();
     for(i = 0; i < QTDPRODUTOS; i++)
     {
       somaDosPesosDosProdutos = somaDosPesosDosProdutos + pesosDosProdutos[i];
     }
+    finishSoma = clock();
+    timeSoma = ((double) (finishSoma - startSoma)) / CLOCKS_PER_SEC;
     printf("Valor total do peso dos produtos: %d\n",somaDosPesosDosProdutos);
 
     // printf("Deseja executar novamente? (0 para parar e 1 para continuar)\n");
@@ -49,9 +56,14 @@ int main()
     //
   }while(opcaoContinuar == 1);
 
-  finish = clock();
-  time = ((double) (finish - start))/CLOCKS_PER_SEC;
-  printf("Demorou isto: %f\n",time );
+  finishGeral = clock();
+  timeGeral = ((double) (finishGeral - startGeral))/CLOCKS_PER_SEC;
+
+  printf("Tempos para programa Single thread.\n");
+  printf("Tempo em geral: %f\n",timeGeral);                        // Printando quanto tempo demorou
+  printf("Tempo na soma: %f\n", timeSoma);
+  printf("Tempo nas Esteiras: %f\n",timeEsteiras);
+
   return 0;
 }
 

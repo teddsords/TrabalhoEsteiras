@@ -25,8 +25,10 @@ int main()
   opcaoContinuar = 0,                                             // Variavel para saber se o programa executara novamente
   caracterLixo;                                                   // Variavel para pegar o lixo e nao ler lixo no seguinte scanf
   long id1 = 1, id2 = 2, id3 = 3, id4 = 4;                        // Variaveis para ids das threads
-  clock_t start, finish;                                          // Variaveis para obter os clocks passados
-  double time;                                                    // Variavel para mostrar o tempo passado
+  clock_t startSoma, finishSoma,
+          startEsteiras, finishEsteiras,
+          startGeral, finishGeral;                                // Variaveis para obter os clocks passados
+  double timeSoma, timeEsteiras, timeGeral;                       // Variavel para mostrar o tempo passado
   pthread_mutexattr_t mutexAttrPrioInherit;                       // Variavel para atributo do mutex
   int mutexProtocol;                                              // Variavel para receber o protocolo utilizado pelo mutex
 
@@ -37,7 +39,7 @@ int main()
     pthread_mutexattr_setprotocol(&mutexAttrPrioInherit, PTHREAD_PRIO_INHERIT); // iremos definir que o protocolo a ser utilizado sera esse
   }
 
-  start = clock();
+  startGeral = clock();
 
   do
   {
@@ -47,12 +49,12 @@ int main()
       return 6;
     }
 
+    startEsteiras = clock();
     pthread_t threadEsteira[3], threadContadora;                  // Criando as variaveis que estarao anexadas as threads
     pthread_create(&threadEsteira[0], NULL, somandoProdutos, (void *) id1);     // Criando a thread 1, ira executar a funcao somandoProdutos
     pthread_create(&threadEsteira[1], NULL, somandoProdutos, (void *) id2);     // Criando a thread 2, ira executar a funcao somandoProdutos
     pthread_create(&threadEsteira[2], NULL, somandoProdutos, (void *) id3);     // Criando a thread 3, ira executar a funcao somandoProdutos
     pthread_create(&threadContadora, NULL, countProdutos, (void *) id4);        // Criando a thread encarregada de observar se ja chegamos ao objetivo, ira executar a funcao countProdutos
-    //timer
 
     while(quantidadeDeProdutosPassados < QTDPRODUTOS)            // Atualizando o display enquanto nao tenhamos atingido o objetivo
     {
@@ -64,17 +66,22 @@ int main()
       pthread_join(threadEsteira[indice], NULL);                  // Esperando para que todas as threads das esteiras voltem
     }
     pthread_join(threadContadora, NULL);                          // Esperando para que a thread contadora volte
-    //final timer
+    finishEsteiras = clock();
+    timeEsteiras = ((double) (finishEsteiras - startEsteiras)) / CLOCKS_PER_SEC;// Tempo para contar os 1500 produtos
 
-    //iniciar o timer
+    startSoma = clock();
     for(indice = 0; indice < QTDPRODUTOS; indice++)
     {
       somaDosPesosDosProdutos += pesosDosProdutos[indice];        // Somando os pesos dos  produtos que passaram pelas 3 esteiras
     }
-    // finalizar o timer
+    finishSoma = clock();
+    timeSoma = ((double) (finishSoma - startSoma)) / CLOCKS_PER_SEC;            // Tempo para realizar a soma
+
     printf("Valor total do peso dos produtos: %d\n", somaDosPesosDosProdutos);  // Pritando o peso total
     printf("Quantidade de produtos: %d\n", quantidadeDeProdutosPassados);       // Mostrando a quantidade de produtos contados
 
+    finishGeral = clock();
+    timeGeral = ((double) (finishGeral - startGeral)) / CLOCKS_PER_SEC;
     //printf("Deseja executar novamente? (0 para parar e 1 para continuar).\n");//Perguntando se o programa ira executar novamente
     //scanf("%d", &opcaoContinuar);                               // Lendo input do teclado
     //while((c = getchar()) != '\n' && c != EOF){}                // Limpando buffer
@@ -88,9 +95,10 @@ int main()
     //}
   }while(opcaoContinuar == 1);
 
-  finish = clock();
-  time = ((double) (finish - start))/CLOCKS_PER_SEC;              // Pegando o tempo total da aplicacao
-  printf("Demorou isto: %f\n",time );                             // Printando quanto tempo demorou
+  printf("Tempos para programa Multithread.\n");
+  printf("Tempo em geral: %f\n",timeGeral);                        // Printando quanto tempo demorou
+  printf("Tempo na soma: %f\n", timeSoma);
+  printf("Tempo nas Esteiras: %f\n",timeEsteiras);
   pthread_mutex_destroy(&lock);                                   // Destruindo o Mutex
   pthread_cond_destroy(&contagemAtingida);                        // Destruindo a variavel condicional
   pthread_exit(NULL);                                             // Invocando o metodo de exit para todas as threads
