@@ -4,12 +4,9 @@
 #include <unistd.h>
 #include <time.h>
 
-#define QTDPRODUTOS 1500
-pthread_t pthEsteira1, pthEsteira2, pthEsteira3;
-pthread_attr_t attr;
-pthread_mutexattr_t mutexAttrPrioInherit;
-int mutexProtocol;
+#define QTDPRODUTOS 5000
 pthread_mutex_t lock;
+
 
 int i = 0, quantidadeDeProdutosPassados = 0, pesosDosProdutos[QTDPRODUTOS], numeroRandomico;
 
@@ -33,20 +30,15 @@ void* somandoProdutos(void * arg)
   {
     if (simulandoSensor() == 1)
     {
-      //if(quantidadeDeProdutosPassados < QTDPRODUTOS)
-        //{
-        pthread_mutex_lock(&lock);
+      pthread_mutex_lock(&lock);
+      if(quantidadeDeProdutosPassados < QTDPRODUTOS)
+      {
+        pesosDosProdutos[quantidadeDeProdutosPassados] = 1;//rand()%20 + 1;
         quantidadeDeProdutosPassados++;
-        pesosDosProdutos[i] = 1;//rand()%20 + 1;
-        i++;
-        pthread_mutex_unlock(&lock);
-        //usleep(1000);
-        //printf("I am locked with: %ld.\n", id);
-        printf("Valor de quantidadeDeProdutosPassados: %d\n",quantidadeDeProdutosPassados);
-      //}
+      }
+      pthread_mutex_unlock(&lock);
     }
   }
-
   return NULL;
 }
 
@@ -55,6 +47,9 @@ int main()
   srand(time(NULL));
   int a, somaDosPesosDosProdutos = 0, opcaoContinuar = 0, c;
   long id1 = 1, id2 = 2, id3 = 3;
+  pthread_t pthEsteira1, pthEsteira2, pthEsteira3;
+  pthread_mutexattr_t mutexAttrPrioInherit;
+  int mutexProtocol;
 
   pthread_mutexattr_init(&mutexAttrPrioInherit);
   pthread_mutexattr_getprotocol(&mutexAttrPrioInherit, &mutexProtocol);
@@ -77,29 +72,32 @@ int main()
       printf("Deu SERIAMENTE MERDA");
       return 6;
     }
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    //pthread_attr_init(&attr);
+    //pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
     //while(quantidadeDeProdutosPassados < QTDPRODUTOS)
     //{
-      if(pthread_create(&pthEsteira1, &attr, somandoProdutos, (void*) id1))
+      if(pthread_create(&pthEsteira1, NULL, somandoProdutos, (void*) id1))
       {
         fprintf(stderr, "Error creating thread 2\n");
         return 1;
       }
-      if(pthread_create(&pthEsteira2, &attr, somandoProdutos, (void*) id2))
+      if(pthread_create(&pthEsteira2, NULL, somandoProdutos, (void*) id2))
       {
         fprintf(stderr, "Error creating thread 2\n");
         return 2;
       }
 
-      if(pthread_create(&pthEsteira3, &attr, somandoProdutos, (void*) id3))
+      if(pthread_create(&pthEsteira3, NULL, somandoProdutos, (void*) id3))
       {
         fprintf(stderr, "Error creating thread 3\n");
         return 3;
       }
 
-      pthread_attr_destroy(&attr);
+    while(quantidadeDeProdutosPassados < QTDPRODUTOS)
+      printf("Valor de quantidadeDeProdutosPassados: %d\n",quantidadeDeProdutosPassados);
+
+      //pthread_attr_destroy(&attr);
       if(pthread_join(pthEsteira1,NULL))
       {
         fprintf(stderr, "Error joining thread 2\n");
@@ -120,7 +118,7 @@ int main()
     //}
 
 
-    printf("Valor de quantidade de produtos passados: %d\n", quantidadeDeProdutosPassados);
+    //printf("Valor de quantidade de produtos passados: %d\n", quantidadeDeProdutosPassados);
 
     //iniciar o timer
     for(a = 0; a < QTDPRODUTOS; a++)
