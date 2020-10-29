@@ -1,3 +1,11 @@
+/*
+    Arquivo: main.c
+    Autores: Leonardo Luis Grando e Teddy Ordoñez Nuñez
+    Função do arquivo: Mostrar o funcionamento do problema das esteiras utilizando 
+    programação concorrente com PThreads
+    Criado em 22 de outubro de 2020
+    Modificado em 28 de outubro de 2020
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>

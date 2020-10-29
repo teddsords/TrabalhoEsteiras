@@ -1,3 +1,11 @@
+/*
+    Arquivo: mainSingleThread.c
+    Autores: Leonardo Luis Grando e Teddy Ordoñez Nuñez
+    Função do arquivo: Mostrar o funcionamento do problema das esteiras utilizando apenas 1 thread.
+    Criado em 25 de outubro de 2020
+    Modificado em 28 de outubro de 2020
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
