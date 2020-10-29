@@ -146,14 +146,13 @@ void* somandoProdutos(void * arg)                                 // Trecho de c
       pthread_mutex_lock(&lock);                                  // Bloquearemos a seguinte parte do codigo pois e a secao critica
       pesosDosProdutos[quantidadeDeProdutosPassados] = rand()%20 + 1;           // Peso aleatorio
       quantidadeDeProdutosPassados++;                             // Passou um produto, soma um na quantidade
-      pthread_mutex_unlock(&lock);
       if(quantidadeDeProdutosPassados == QTDPRODUTOS)             // Caso tenhamos atingido o objetivo
       {
         pthread_cond_signal(&contagemAtingida);                   // Temos que avisar a threadContadora para finalizar o processo de contagem
         printf("somandoProdutos(): thread: %ld, QTD: %d    Atingimos marca\n", id, quantidadeDeProdutosPassados);
       }
       //printf("somandoProdutos(): thread: %ld, QTD: %d       Desbloqueando mutex\n", id, quantidadeDeProdutosPassados); // So para ilustrar quem esta contando no momento
-      // pthread_mutex_unlock(&lock);                                // Desbloqueando a secao critica
+      pthread_mutex_unlock(&lock);                                // Desbloqueando a secao critica
       // Mandando fazer algum trabalho para alternar no mutex
       //usleep(1);
     }
